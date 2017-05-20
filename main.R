@@ -1,102 +1,52 @@
 library(imager)
-source("pyramid.R")
-picture <- load.image("lena.jpg")
-
-# Potrzebna do innych obliczen piramida Gaussa
-# Piramida ma 9 poziomów
-gaussian_maps_pyramid <- createGaussianMapsPyramid(picture)
+source("featurePyramids.R")
+source("gaussianPyramid.R")
+source("imageProcessing.R")
+source("utils.R")
+source("normalization.R")
+image <- load.image("img/balloons.png")
 
 # 3 rodzaje piramid - intensity, color, orientation
 # Konieczne do obliczenia feature map dla intensity, color, orientation
-# Piramida ma 9 poziomów
-intensity_maps_pyramid <- createIntensityMapsPyramid(gaussian_maps_pyramid)
+color_RG_maps_pyramid <- makeRedGreenPyramid(image)
+color_BY_maps_pyramid <- makeBlueYellowPyramid(image)
 
-color_RG_maps_pyramid <- createRGMapsPyramid(gaussian_maps_pyramid)
-color_BY_maps_pyramid <- createBYMapsPyramid(gaussian_maps_pyramid)
+intensity_maps_pyramid <- makeIntensityPyramid(image)
 
-orientation_0_maps_pyramid <- createOrientationMapsPyramid(intensity_maps_pyramid, 0)
-orientation_45_maps_pyramid <- createOrientationMapsPyramid(intensity_maps_pyramid, 45)
-orientation_90_maps_pyramid <- createOrientationMapsPyramid(intensity_maps_pyramid, 90)
-orientation_135_maps_pyramid <- createOrientationMapsPyramid(intensity_maps_pyramid, 135)
+orientation_0_maps_pyramid <- makeOrientationPyramid(intensity_maps_pyramid, 0)
+orientation_45_maps_pyramid <- makeOrientationPyramid(intensity_maps_pyramid, 45)
+orientation_90_maps_pyramid <- makeOrientationPyramid(intensity_maps_pyramid, 90)
+orientation_135_maps_pyramid <- makeOrientationPyramid(intensity_maps_pyramid, 135)
 
 # Tworzenie feature maps, z których powstaną conspicuity maps
 # Feature map ma 6 poziomów
-intensity_feature_maps <- createFeatureMaps(intensity_maps_pyramid)
+color_RG_feature_maps <- maxNormalize(centerSurround(color_RG_maps_pyramid), c(0, 10))
+color_BY_feature_maps <- maxNormalize(centerSurround(color_BY_maps_pyramid), c(0, 10))
 
-color_RG_feature_maps <- createFeatureMaps(color_RG_maps_pyramid)
-color_BY_feature_maps <- createFeatureMaps(color_BY_maps_pyramid)
+intensity_feature_maps <- maxNormalize(centerSurround(intensity_maps_pyramid), c(0, 10))
 
-orientation_0_feature_maps <- createFeatureMaps(orientation_0_maps_pyramid)
-orientation_45_feature_maps <- createFeatureMaps(orientation_45_maps_pyramid)
-orientation_90_feature_maps <- createFeatureMaps(orientation_90_maps_pyramid)
-orientation_135_feature_maps <- createFeatureMaps(orientation_135_maps_pyramid)
+orientation_0_feature_maps <- maxNormalize(centerSurround(orientation_0_maps_pyramid), c(0, 10))
+orientation_45_feature_maps <- maxNormalize(centerSurround(orientation_45_maps_pyramid), c(0, 10))
+orientation_90_feature_maps <- maxNormalize(centerSurround(orientation_90_maps_pyramid), c(0, 10))
+orientation_135_feature_maps <- maxNormalize(centerSurround(orientation_135_maps_pyramid), c(0, 10))
 
 # Tworzenie conspicuity maps
-intensity_conspicuity_map <- doNormalization(addFeatureMapsAcrossScale(intensity_feature_maps))
+color_RG_combined_map <- maxNormalize(combineMaps(color_RG_feature_maps), c(0, 0))
+color_BY_combined_map <- maxNormalize(combineMaps(color_BY_feature_maps), c(0, 0))
+intensity_combined_map <- maxNormalize(combineMaps(intensity_feature_maps), c(0, 0))
+orientation_0_combined_map <- maxNormalize(combineMaps(orientation_0_feature_maps), c(0, 0))
+orientation_45_combined_map <- maxNormalize(combineMaps(orientation_45_feature_maps), c(0, 0))
+orientation_90_combined_map <- maxNormalize(combineMaps(orientation_90_feature_maps), c(0, 0))
+orientation_135_combined_map <- maxNormalize(combineMaps(orientation_135_feature_maps), c(0, 0))
 
-color_RG_temp_map <- doNormalization(addFeatureMapsAcrossScale(color_RG_feature_maps))
-color_BY_temp_map <- doNormalization(addFeatureMapsAcrossScale(color_BY_feature_maps))
-color_conspicuity_map <- doNormalization(addMaps(c(color_RG_temp_map, color_BY_temp_map)))
-
-orientation_0_temp_map <- doNormalization(addFeatureMapsAcrossScale(orientation_0_feature_maps))
-orientation_45_temp_map <- doNormalization(addFeatureMapsAcrossScale(orientation_45_feature_maps))
-orientation_90_temp_map <- doNormalization(addFeatureMapsAcrossScale(orientation_90_feature_maps))
-orientation_135_temp_map <- doNormalization(addFeatureMapsAcrossScale(orientation_135_feature_maps))
-orientation_conspicuity_map <- doNormalization(addMaps(c(orientation_0_temp_map, orientation_45_temp_map, orientation_90_temp_map, orientation_135_temp_map)))
+color_conspicuity_map <- maxNormalize(combineMaps(list(color_RG_combined_map, color_BY_combined_map)), c(0, 0)) / 6
+intensity_conspicuity_map <- intensity_combined_map / 3
+orientation_conspicuity_map <- maxNormalize(combineMaps(list(orientation_0_combined_map, orientation_45_combined_map, orientation_90_combined_map, orientation_135_combined_map)), c(0, 0)) / 12
 
 # Tworzenie silency map
+silency_map <- maxNormalize(combineMaps(list(
+  color_conspicuity_map,
+  intensity_conspicuity_map,
+  orientation_conspicuity_map)), c(0, 2))
 
-# PS Nie wiem, czy to dzielenie przejdzie w takiem formie :D
-silency_map <- addMaps(c(intensity_conspicuity_map, color_conspicuity_map, orientation_conspicuity_map)) / 3
-
-
-
-# Funkcje do zaimplementowania, można je przenieść do innych plików
-# source("nazwaPliku.R")
-createFeatureMaps <- function(pyramid) {
-  
-  featureMaps <- list()
-  for (c in 2:4) {
-    for(s in c+3:c+4) {
-      featureMaps <- c(featureMaps, list(createFeatureMap(pyramid, c, s)))
-    }
-  }
-  return(featureMaps)
-}
-
-createFeatureMap <- function(pyramid, c, s) {
-  
-  mapAfterSubtraction <- subtractMapsAcrossScale(pyramid[[c]], pyramid[[s]])
-  featureMap <- doNormalization(mapAfterSubtraction)
-  return(featureMap)
-}
-
-subtractMapsAcrossScale <- function(map1, map2) {
-  
-  return(map1)
-}
-
-doNormalization <- function(map) {
-  
-  return(map)
-}
-
-addFeatureMapsAcrossScale <- function(feature_maps) {
-  
-  resultMap <- feature_maps[[1]]
-  for(i in 2:length(feature_maps)) {
-    resultMap <- addMapsAcrossScale(resultMap, feature_maps[[i]])
-  }
-  return(resultMap)
-}
-
-addMapsAcrossScale <- function(map1, map2) {
-  
-  return(map1)
-}
-
-
-# maps to lista map
-addMaps <- function(maps) {
-  
-}
+plot(imrotate(as.cimg(silency_map[,ncol(silency_map):1]), 90))
