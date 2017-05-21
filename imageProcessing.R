@@ -146,18 +146,18 @@ attenuateBorders <- function(img, border_size) {
   result <- img
   dsz <- dim(img)
   
-  if (borderSize * 2 > dsz[1]) {
-    borderSize <- floor(dsz[1] / 2)
+  if (border_size * 2 > dsz[1]) {
+    border_size <- floor(dsz[1] / 2)
   }
-  if (borderSize * 2 > dsz[2]) {
-    borderSize <- floor(dsz[2] / 2)
+  if (border_size * 2 > dsz[2]) {
+    border_size <- floor(dsz[2] / 2)
   }
-  if (borderSize < 1) {
+  if (border_size < 1) {
     return(result)
   }
   
-  bs <- 1:borderSize
-  coeffs <- bs / (borderSize + 1)
+  bs <- 1:border_size
+  coeffs <- bs / (border_size + 1)
   
   rec <- do.call(cbind, replicate(dsz[2], t(coeffs), simplify=FALSE))
   result[bs,] <- result[bs,] * rec

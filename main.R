@@ -4,6 +4,7 @@ source("gaussianPyramid.R")
 source("imageProcessing.R")
 source("utils.R")
 source("normalization.R")
+source("featureMaps.R")
 image <- load.image("img/balloons.png")
 
 # 3 rodzaje piramid - intensity, color, orientation
