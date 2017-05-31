@@ -75,8 +75,8 @@ conv2Matrixes <- function(matA, matB, full) {
     current_size <- dim(convolution)
     row_diff <- current_size[1] - orig_size[1]
     col_diff <- current_size[2] - orig_size[2]
-    return(convolution[(ceiling(row_diff / 2) + 1):(orig_size[1] + floor(row_diff / 2)),
-                       (ceiling(col_diff / 2) + 1):(orig_size[2] + floor(col_diff / 2))])
+    return(convolution[(ceiling(row_diff / 2) + 1):(orig_size[1] + ceiling(row_diff / 2)),
+                       (ceiling(col_diff / 2) + 1):(orig_size[2] + ceiling(col_diff / 2))])
   }
 }
 

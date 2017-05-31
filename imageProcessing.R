@@ -45,7 +45,7 @@ sepConv2PreserveEnergy <- function(filter1, filter2, img) {
     range <- fl1+fl1b+(1:sd1)
     ff1 <- do.call(cbind, replicate(sd2, tmp[range]-tmp[range-sd1], simplify=FALSE))
     result <- result * fs1 / ff1
-  } else {
+  } else if (fl1b > 1) {
     ff1a <- do.call(cbind, replicate(sd2, fc1a[(fl1b+1):(length(fc1a)-1)], simplify=FALSE))
     result[1:fl1b,] <- result[1:fl1b,] * fs1 / ff1a
     ff1b <- do.call(cbind, replicate(sd2, fc1b[(fl1b+1):(length(fc1b)-1)], simplify=FALSE))
@@ -64,7 +64,7 @@ sepConv2PreserveEnergy <- function(filter1, filter2, img) {
     range <- fl2+fl2b+(1:sd2)
     ff2 <- do.call(rbind, replicate(sd1, tmp[range]-tmp[range-sd2], simplify=FALSE))
     result <- result * fs2 / ff2
-  } else {
+  } else if (fl2b > 1) {
     ff2a <- do.call(rbind, replicate(sd1, fc2a[(fl2b+1):(length(fc2a)-1)], simplify=FALSE))
     result[,1:fl2b] <- result[,1:fl2b] * fs2 / ff2a
     ff2b <- do.call(rbind, replicate(sd1, fc2b[(fl2b+1):(length(fc2b)-1)], simplify=FALSE))
@@ -159,14 +159,48 @@ attenuateBorders <- function(img, border_size) {
   bs <- 1:border_size
   coeffs <- bs / (border_size + 1)
   
-  rec <- do.call(cbind, replicate(dsz[2], t(coeffs), simplify=FALSE))
+  rec <- do.call(cbind, replicate(dsz[2], coeffs, simplify=FALSE))
   result[bs,] <- result[bs,] * rec
   range <- dsz[1] - bs + 1
   result[range,] <- result[range,] * rec
   
-  rec <- do.call(rbind, replicate(dsz[1], coeffs, simplify=FALSE))
+  rec <- do.call(rbind, replicate(dsz[1], t(coeffs), simplify=FALSE))
   result[,bs] <- result[,bs] * rec
   range <- dsz[2] - bs + 1
   result[,range] <- result[,range] * rec
+  return(result)
+}
+
+registerSaliencyMap <- function(original, saliency_map) {
+  result <- original
+  row_diff <- floor(abs(nrow(original) - nrow(saliency_map)) / 2)
+  col_diff <- floor(abs(ncol(original) - ncol(saliency_map)) / 2)
+  if (nrow(original) > nrow(saliency_map)) {
+    s_min_row <- 1
+    s_max_row <- nrow(saliency_map)
+    o_min_row <- 1 + row_diff
+    o_max_row <- nrow(saliency_map) + row_diff
+  } else {
+    s_min_row <- 1 + row_diff
+    s_max_row <- nrow(original) + row_diff
+    o_min_row <- 1
+    o_max_row <- nrow(original)
+  }
+  if (ncol(original) > ncol(saliency_map)) {
+    s_min_col <- 1
+    s_max_col <- ncol(saliency_map)
+    o_min_col <- 1 + col_diff
+    o_max_col <- ncol(saliency_map) + col_diff
+  } else {
+    s_min_col <- 1 + col_diff
+    s_max_col <- ncol(original) + col_diff
+    o_min_col <- 1
+    o_max_col <- ncol(original)
+  }
+  for (i in 1:3) {
+    result[o_min_row:o_max_row,o_min_col:o_max_col,1,i] <-
+      original[o_min_row:o_max_row,o_min_col:o_max_col,1,i] *
+      saliency_map[s_min_row:s_max_row,s_min_col:s_max_col,1,1]
+  }
   return(result)
 }
