@@ -71,9 +71,9 @@ makeSaliencyMap <- function(path, save_output = TRUE, verbose = FALSE) {
     plot(image, main = 'Original image')
     plot(original_with_saliency, main = 'Original image with darkened salient locations')
   }
-  out_path <- file.path(dirname(path), paste("output", basename(file_path_sans_ext(path)), sep = "_"))
-  dir.create(out_path)
   if (save_output) {
+    out_path <- file.path(dirname(path), paste("output", basename(file_path_sans_ext(path)), sep = "_"))
+    dir.create(out_path)
     save.image(imager_saliency_map, paste(out_path, "small_saliency_map_neg.jpg", sep = "/"), quality = 1)
     save.image(imager_modified_saliency, paste(out_path, "full_saliency_map.jpg", sep = "/"), quality = 1)
     save.image(image, paste(out_path, "original_image.jpg", sep = "/"), quality = 1)
