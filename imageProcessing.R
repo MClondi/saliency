@@ -104,13 +104,6 @@ conv2PreserveEnergy <- function(img, filter) {
     sBmat <- do.call(cbind, replicate(sw - 2*fw2, sB, simplify=FALSE))
     result[(sh-fh2+1):sh,(1+fw2):(sw-fw2)] <- result[(sh-fh2+1):sh,(1+fw2):(sw-fw2)] * sBmat
   }
-  
-  # Bug in saliency toolbox - here should be rescaling along left and right borders
-  # If condition is always false! Omitting this piece of code
-  
-  # Bug in saliency toolbox - here should be rescaling for corners
-  # If condition is always false! Omitting this piece of code
-  
   return(result)
 }
 
